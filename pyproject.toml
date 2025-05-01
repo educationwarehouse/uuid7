@@ -1,0 +1,28 @@
+[project]
+name = "edwh-uuid7"
+version = "0.1.0"
+description = "pg_uuidv7-compatible UUID version 7 generation"
+readme = "README.md"
+authors = [
+    { name = "Robin van der Noord", email = "robinvandernoord@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "python-dateutil",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "hatch",
+    "edwh",
+]
+
+
+[project.scripts]
+edwh-uuid7 = "edwh_uuid7:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
