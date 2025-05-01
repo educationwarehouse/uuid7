@@ -15,6 +15,11 @@ from zoneinfo import ZoneInfo
 from dateutil.parser import parse as dt_parse
 
 
+def get_14bit_seq(time_ns: int = None):
+    # Use current time in microseconds since boot (monotonic)
+    us = (time_ns or time.monotonic_ns()) // 1000
+    return us & 0x3FFF  # Mask to 14 bits (0–16383)
+
 def uuid7(ms: Optional[int | float] = None) -> UUID:
     """
     Generate a UUIDv7 compatible with PostgreSQL format.
@@ -33,7 +38,12 @@ def uuid7(ms: Optional[int | float] = None) -> UUID:
         return UUID('00000000-0000-0000-0000-000000000000')
 
     # Get current time in nanoseconds for maximum precision
-    now_ns = time.time_ns()
+    now_ns = time.monotonic_ns()
+    # Use nanosecond precision to ensure monotonicity
+    # We'll use the last 12 digits of nanoseconds as our "serial" number
+    # This should be unique and monotonic for rapid generations
+    # serial = now_ns % 1_000_000_000  # 0-999,999,999
+    serial = get_14bit_seq(now_ns)
 
     if ms is None:
         ms = now_ns / 1_000_000_000  # Convert ns to seconds
@@ -43,11 +53,6 @@ def uuid7(ms: Optional[int | float] = None) -> UUID:
 
     # Timestamp bytes (48 bits)
     timestamp_bytes = (ms_int << 16).to_bytes(8, 'big')[:6]
-
-    # Use nanosecond precision to ensure monotonicity
-    # We'll use the last 12 digits of nanoseconds as our "serial" number
-    # This should be unique and monotonic for rapid generations
-    serial = now_ns % 1_000_000_000  # 0-999,999,999
 
     # Create random bytes
     rand = bytearray(10)
