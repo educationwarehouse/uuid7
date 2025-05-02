@@ -6,9 +6,10 @@ as well as UUIDv7 generation and conversion to/from `datetime`.
 
 ## Overview
 
-UUIDv7 is a time-sortable UUID format composed of a timestamp, a sequence counter, and random bits. Our implementation
-follows our interpretation of the UUIDv7 specification, which provides flexibility in implementing details such as the
-sequential counter.
+UUIDv7 is a time-sortable UUID format composed of a timestamp and random bits. Our implementation
+follows the UUIDv7 specification, which provides flexibility in ensuring monotonicity. We utilize microseconds for 
+sub-millisecond precision within the timestamp; this acts as a stateless monotonic counter for UUIDs generated within the 
+same millisecond and leaves more room for entropy compared to using nanoseconds.
 
 ### UUIDv7 Layout (128 bits)
 
