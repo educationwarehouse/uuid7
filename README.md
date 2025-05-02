@@ -58,34 +58,34 @@ print(f"Generated UUIDv7: {uuid}")
 ### Converting a UUIDv7 to a datetime
 
 ```python
-from edwh_uuid7 import uuid7, uuid7_to_datetime  # or uuid_generate_v7, uuid_v7_to_timestamptz
+from edwh_uuid7 import uuid7, uuid7_to_datetime       # or uuid_generate_v7, uuid_v7_to_timestamptz
 
-uuid = uuid7()
-datetime_value = uuid7_to_datetime(uuid)
-print(f"Corresponding datetime: {datetime_value}")
+uuid = uuid7()                                        # UUID('0196905b-4434-74ef-aa27-442be7069beb')
+datetime_value = uuid7_to_datetime(uuid)              # datetime.datetime(2025, 5, 2, 9, 37, 2, 516000, tzinfo=datetime.timezone.utc)
+print(f"Corresponding datetime: {datetime_value}")    # 2025-05-02 09:37:02.516000+00:00
 ```
 
 ### Converting a datetime to a UUIDv7
 
 ```python
-from edwh_uuid7.core import datetime_to_uuid7  # or uuid_timestamptz_to_v7
+from edwh_uuid7.core import datetime_to_uuid7                      # or uuid_timestamptz_to_v7
 from datetime import datetime, timezone
 
-dt = datetime(2025, 5, 2, 8, 46, 48, 307329, tzinfo=timezone.utc)
-uuid_from_dt = datetime_to_uuid7(dt)
-print(f"UUIDv7 from datetime: {uuid_from_dt}")
+dt = datetime(2025, 5, 2, 9, 37, 2, 516000, tzinfo=timezone.utc)
+uuid_from_dt = datetime_to_uuid7(dt)                               # UUID('0196905b-4434-7000-8012-620314c8b88b')
+print(f"UUIDv7 from datetime: {uuid_from_dt}")                     # 0196905b-4434-7000-8012-620314c8b88b
 ```
 
 ### Extracting a timezone-aware datetime
 
 ```python
-from edwh_uuid7 import uuid7, uuid7_to_datetime  # or uuid_generate_v7, uuid_v7_to_timestamptz
+from edwh_uuid7 import uuid7, uuid7_to_datetime                            # or uuid_generate_v7, uuid_v7_to_timestamptz
 from zoneinfo import ZoneInfo
 
-uuid = uuid7()
-datetime_value = uuid7_to_datetime(uuid, tz=ZoneInfo("Europe/Amsterdam"))
-print(f"Generated UUID: {uuid}")
-print(f"Timezone-aware datetime: {datetime_value}")
+uuid = uuid7()                                                             # UUID('0196905f-0339-769a-9f0b-8fedc645a688')
+datetime_value = uuid7_to_datetime(uuid, tz=ZoneInfo("Europe/Amsterdam"))  # datetime.datetime(2025, 5, 2, 11, 41, 8, 25000, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam'))
+print(f"Generated UUID: {uuid}")                                           # 0196905f-0339-769a-9f0b-8fedc645a688
+print(f"Timezone-aware datetime: {datetime_value}")                        # 2025-05-02 11:41:08.025000+02:00
 ```
 
 ## Caveats
