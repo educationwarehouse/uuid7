@@ -6,96 +6,114 @@ UUIDv7 identifiers compatible with PostgreSQL extensions that
 follow the timestamp-left-shifted format.
 """
 
-import os
+import secrets
 import time
-from uuid import UUID
-from datetime import datetime, timezone, UTC
+from datetime import UTC, datetime, timezone
 from typing import Optional
+from uuid import UUID
 from zoneinfo import ZoneInfo
+
 from dateutil.parser import parse as dt_parse
 
 
-def get_14bit_seq(time_ns: int = None):
-    # Use current time in microseconds since boot (monotonic)
-    us = (time_ns or time.monotonic_ns()) // 1000
-    return us & 0x3FFF  # Mask to 14 bits (0–16383)
-
-def uuid7(ms: Optional[int | float] = None) -> UUID:
+def uuid7(
+    timestamp_ms: Optional[int | float] = None,
+    timestamp_ns: Optional[int | float] = None,
+) -> UUID:
     """
-    Generate a UUIDv7 compatible with PostgreSQL format.
+    Generates a UUIDv7-style UUID with full 64-bit nanosecond timestamp precision.
 
-    This uses a Unix epoch timestamp in milliseconds (default: now),
-    left-shifted by 16 bits, with the top 48 bits stored in the UUID timestamp field.
-
-    Args:
-        ms (Optional[int | float]): Milliseconds since Unix epoch. If None, uses current time.
-
-    Returns:
-        UUID: A version 7, variant 1 UUID.
+    UUID Layout (128 bits):
+    -------------------------------------------------------------------
+    Bits  | Field           | Description
+    ------|-----------------|--------------------------------------------------
+    0-47  | timestamp_ms    | Unix timestamp in milliseconds (sortable)
+    48-51 | version         | UUID version (0b0111 for v7)
+    52-71 | sub_ms_ns       | Sub-millisecond nanoseconds (20 bits = 0-999_999)
+    72-127| random          | 54 bits of randomness (variant bits embedded)
+    -------------------------------------------------------------------
+    Variant is stored in bits 70–71 (byte 8, bits 6–7), set to 0b10 per RFC 4122.
     """
-    if isinstance(ms, int) and ms == 0:
-        # special case which stevesimmons/uuid7 also has:
-        return UUID('00000000-0000-0000-0000-000000000000')
+    if timestamp_ms is not None and timestamp_ns is not None:
+        raise ValueError("Specify only one of timestamp_ms or timestamp_ns, not both.")
 
-    # Get current time in nanoseconds for maximum precision
-    now_ns = time.monotonic_ns()
-    # Use nanosecond precision to ensure monotonicity
-    # We'll use the last 12 digits of nanoseconds as our "serial" number
-    # This should be unique and monotonic for rapid generations
-    # serial = now_ns % 1_000_000_000  # 0-999,999,999
-    serial = get_14bit_seq(now_ns)
+    if (timestamp_ms == 0 and timestamp_ns is None) or (
+        timestamp_ns == 0 and timestamp_ms is None
+    ):
+        return UUID("00000000-0000-0000-0000-000000000000")
 
-    if ms is None:
-        ms = now_ns / 1_000_000_000  # Convert ns to seconds
+    if timestamp_ns is not None:
+        timestamp_ns = int(timestamp_ns)
+    elif timestamp_ms is not None:
+        timestamp_ns = int(timestamp_ms * 1_000_000_000)
+    else:
+        timestamp_ns = time.time_ns()
 
-    # Convert to milliseconds
-    ms_int = int(ms * 1000)
+    if timestamp_ns < 0:
+        raise ValueError("Timestamp must be positive.")
 
-    # Timestamp bytes (48 bits)
-    timestamp_bytes = (ms_int << 16).to_bytes(8, 'big')[:6]
+    timestamp_ms = timestamp_ns // 1_000_000
+    sub_ms_ns = timestamp_ns % 1_000_000  # 20 bits max
 
-    # Create random bytes
-    rand = bytearray(10)
+    uuid_int = 0
+    uuid_int |= (timestamp_ms & ((1 << 48) - 1)) << 80  # Bits 0–47
+    uuid_int |= 0x7 << 76  # Bits 48–51 (version 7)
+    uuid_int |= (sub_ms_ns & 0xFFFFF) << 56  # Bits 52–71 (20 bits)
 
-    # Put most significant bits of serial in the first byte (after version bits)
-    rand[0] = (serial >> 32) & 0x0F
+    random_bits = secrets.randbits(54)  # 54-bit random
+    uuid_int |= random_bits
 
-    # Fill the next 4 bytes with the remainder of the serial for monotonicity
-    rand[1] = (serial >> 24) & 0xFF
-    rand[2] = ((serial >> 16) & 0x3F) | 0x80  # Include variant bits
-    rand[3] = (serial >> 8) & 0xFF
-    rand[4] = serial & 0xFF
+    # Set variant (RFC 4122) in bits 62–63 to 0b10
+    uuid_int &= ~(0b11 << 62)
+    uuid_int |= 0b10 << 62
 
-    # Fill the remaining bytes with random data
-    random_bytes = os.urandom(5)
-    rand[5:] = random_bytes
+    return UUID(int=uuid_int)
 
-    # Set version bits
-    rand[0] = (rand[0] & 0x0F) | 0x70  # version 7
 
-    uuid_bytes = timestamp_bytes + rand
-    return UUID(bytes=bytes(uuid_bytes))
+# def datetime_to_uuid7(dt: datetime | str) -> UUID:
+#     if dt.tzinfo is None:
+#         raise ValueError("datetime must be timezone-aware (e.g., UTC)")
+#     timestamp_ns = int(dt.timestamp() * 1_000_000_000)
+#     return uuid7(timestamp_ns)
+#
+#
+# def uuid7_to_datetime(uuid_obj: UUID) -> Optional[datetime]:
+#     if uuid_obj.version != 7:
+#         return None
+#
+#     uuid_int = uuid_obj.int
+#     timestamp_ms = (uuid_int >> 80) & ((1 << 48) - 1)
+#     sub_ms_ns = (uuid_int >> 56) & 0xFFFFF
+#     timestamp_ns = timestamp_ms * 1_000_000 + sub_ms_ns
+#     return datetime.fromtimestamp(timestamp_ns / 1_000_000_000, tz=timezone.utc)
 
-def uuid7_to_datetime(u: UUID, tz: Optional[ZoneInfo | timezone] = UTC) -> Optional[datetime]:
+
+def uuid7_to_datetime(
+    uuid: UUID | str, tz: Optional[ZoneInfo | timezone] = UTC
+) -> Optional[datetime]:
     """
     Extract the timestamp from a UUIDv7 and return as a datetime.
 
     Args:
-        u (uuid.UUID): A UUIDv7-compliant UUID.
+        uuid (uuid.UUID): A UUIDv7-compliant UUID.
         tz (Optional[timezone]): Desired timezone. Defaults to UTC.
                                  Use tz=None for naive datetime.
 
     Returns:
         datetime: Timestamp extracted from UUIDv7 or None if UUID is not version 7.
     """
-    if u.version != 7:
+    if isinstance(uuid, str):
+        uuid = UUID(uuid)
+
+    if uuid.version != 7:
         return None
 
     # Extract 6 timestamp bytes and convert to full 64-bit int with two zero bytes
-    ts_bytes = u.bytes[:6] + b'\x00\x00'
-    ms_since_epoch = int.from_bytes(ts_bytes, 'big') >> 16
+    ts_bytes = uuid.bytes[:6] + b"\x00\x00"
+    ms_since_epoch = int.from_bytes(ts_bytes, "big") >> 16
 
     return datetime.fromtimestamp(ms_since_epoch / 1000, tz=tz)
+
 
 def datetime_to_uuid7(dt: datetime | str) -> UUID:
     """
@@ -109,4 +127,4 @@ def datetime_to_uuid7(dt: datetime | str) -> UUID:
     """
     if isinstance(dt, str):
         dt = dt_parse(dt)
-    return uuid7(dt.timestamp())
+    return uuid7(timestamp_ms=dt.timestamp())

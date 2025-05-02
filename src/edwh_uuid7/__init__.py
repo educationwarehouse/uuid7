@@ -1,4 +1,4 @@
-from .core import uuid7, uuid7_to_datetime, datetime_to_uuid7
+from .core import datetime_to_uuid7, uuid7, uuid7_to_datetime
 
 # aliases:
 uuid_generate_v7 = uuid7
