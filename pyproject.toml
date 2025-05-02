@@ -1,6 +1,6 @@
 [project]
 name = "edwh-uuid7"
-version = "0.1.0"
+dynamic = ["version"]
 description = "pg_uuidv7-compatible UUID version 7 generation"
 readme = "README.md"
 authors = [
@@ -26,3 +26,14 @@ edwh-uuid7 = "edwh_uuid7:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/edwh_uuid7/__about__.py"
+
+[tool.semantic_release]
+branch = "master"
+version_variable = "src/edwh_uuid7/__about__.py:__version__"
+change_log = "CHANGELOG.md"
+upload_to_repository = false
+upload_to_release = false
+build_command = "hatch build"
