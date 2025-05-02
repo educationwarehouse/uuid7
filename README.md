@@ -12,14 +12,13 @@ sequential counter.
 
 ### UUIDv7 Layout (128 bits)
 
-┌────────────┬──────────────┬──────────────────┬──────────────────────────────────────────────┐
-│ Bits       │ Size (bits)  │ Field            │ Description                                  │
-├────────────┼──────────────┼──────────────────┼──────────────────────────────────────────────┤
-│ 0–47       │ 48           │ timestamp (ms)   │ Unix timestamp in milliseconds (sortable)    │
-│ 48–51      │ 4            │ version          │ UUID version (0b0111 for v7)                 │
-│ 52–71      │ 20           │ sub-ms (μs)      │ Sub-millisecond fraction (0–999_999)         │
-│ 72–127     │ 56           │ random           │ Random bits (includes variant information)   │
-└────────────┴──────────────┴──────────────────┴──────────────────────────────────────────────┘
+| Bits       | Size (bits) | Field          | Description                                      |
+|------------|-------------|----------------|--------------------------------------------------|
+| 0–47       | 48          | timestamp (ms) | Unix timestamp in milliseconds (sortable)        |
+| 48–51      | 4           | version        | UUID version (`0b0111` for v7)                   |
+| 52–71      | 20          | sub-ms (μs)    | Sub-millisecond fraction (0–999,999)             |
+| 72–127     | 56          | random         | Random bits (includes UUID variant information)  |
+
 
 This design makes UUIDv7 globally sortable by creation time (1 μs resolution) 
 while retaining enough entropy for distributed uniqueness.
