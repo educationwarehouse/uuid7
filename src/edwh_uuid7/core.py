@@ -69,27 +69,8 @@ def uuid7(
 
     return UUID(int=uuid_int)
 
-
-# def datetime_to_uuid7(dt: datetime | str) -> UUID:
-#     if dt.tzinfo is None:
-#         raise ValueError("datetime must be timezone-aware (e.g., UTC)")
-#     timestamp_ns = int(dt.timestamp() * 1_000_000_000)
-#     return uuid7(timestamp_ns)
-#
-#
-# def uuid7_to_datetime(uuid_obj: UUID) -> Optional[datetime]:
-#     if uuid_obj.version != 7:
-#         return None
-#
-#     uuid_int = uuid_obj.int
-#     timestamp_ms = (uuid_int >> 80) & ((1 << 48) - 1)
-#     sub_ms_ns = (uuid_int >> 56) & 0xFFFFF
-#     timestamp_ns = timestamp_ms * 1_000_000 + sub_ms_ns
-#     return datetime.fromtimestamp(timestamp_ns / 1_000_000_000, tz=timezone.utc)
-
-
 def uuid7_to_datetime(
-    uuid: UUID | str, tz: Optional[ZoneInfo | timezone] = UTC
+    uuid: UUID | str, tz: Optional[ZoneInfo | timezone] = UTC, high_precision: bool = False
 ) -> Optional[datetime]:
     """
     Extract the timestamp from a UUIDv7 and return as a datetime.
@@ -98,6 +79,8 @@ def uuid7_to_datetime(
         uuid (uuid.UUID): A UUIDv7-compliant UUID.
         tz (Optional[timezone]): Desired timezone. Defaults to UTC.
                                  Use tz=None for naive datetime.
+        high_precision (bool): Whether to extract sub-millisecond precision.
+                               When True, microsecond precision is included. Defaults to False.
 
     Returns:
         datetime: Timestamp extracted from UUIDv7 or None if UUID is not version 7.
@@ -108,11 +91,26 @@ def uuid7_to_datetime(
     if uuid.version != 7:
         return None
 
-    # Extract 6 timestamp bytes and convert to full 64-bit int with two zero bytes
+    # Extract the milliseconds timestamp (bits 0-47)
     ts_bytes = uuid.bytes[:6] + b"\x00\x00"
     ms_since_epoch = int.from_bytes(ts_bytes, "big") >> 16
 
-    return datetime.fromtimestamp(ms_since_epoch / 1000, tz=tz)
+    if high_precision:
+        # Extract the sub-millisecond nanoseconds (bits 52-71)
+        # First get the integer representation
+        uuid_int = uuid.int
+        # Extract bits 52-71 (20 bits for sub-ms nanoseconds)
+        sub_ms_ns = (uuid_int >> 56) & 0xFFFFF  # Mask with 20 bits
+        # Convert to microseconds (1 microsecond = 1000 nanoseconds)
+        microseconds = sub_ms_ns // 1000
+        # Create timestamp with microsecond precision
+        return datetime.fromtimestamp(
+            ms_since_epoch / 1000 + (microseconds / 1_000_000), tz=tz
+        )
+    else:
+        # Original behavior - millisecond precision only
+        return datetime.fromtimestamp(ms_since_epoch / 1000, tz=tz)
+
 
 
 def datetime_to_uuid7(dt: datetime | str) -> UUID:
