@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.2 (2025-05-09)
+
+### Documentation
+
+* Fix example of `High-precision mode` ([`b8d9085`](https://github.com/educationwarehouse/uuid7/commit/b8d90853044d7889b537c51d7facfe629258b6d3))
+
 ## v0.2.1 (2025-05-09)
 
 ### Documentation
