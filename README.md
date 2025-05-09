@@ -27,6 +27,7 @@ while retaining enough entropy for distributed uniqueness.
 ### Key Features of `edwh-uuid7`:
 
 - Compatible with `pg_uuidv7`’s `uuid_generate_v7()`, `uuid_v7_to_timestamptz()`, `uuid_timestamptz_to_v7()` functions.
+- Sorting compatible with Python 3.14's `uuid.uuid7()`
 - Provides conversion between `UUIDv7` and `datetime`.
 - Supports timezone-aware and naive datetime conversions.
 
@@ -36,6 +37,15 @@ The widely-used [`uuid7`](https://pypi.org/project/uuid7/) Python package uses
 a different timestamp scheme, which is **not compatible** with sorting behavior as implemented in the PostgreSQL
 `pg_uuidv7` extension. This package ensures compatibility, ensuring that UUIDv7s generated will sort correctly alongside
 those produced by `pg_uuidv7`.
+
+### Comparison with Python 3.14's uuid7 functionality
+
+Key differences between this library and Python 3.14's built-in uuid7:
+
+- **Timestamp Implementation**: This library works with μs (microseconds), while Python 3.14+ uses a counter mechanism
+- **Conversion Utilities**: This library provides uuid7 ↔ datetime conversion, which isn't available in the standard library implementation (at the time of writing)
+- **PostgreSQL Compatibility**: Both implementations are sorting compatible with the `pg_uuidv7` PostgreSQL extension
+
 
 ## Installation
 
@@ -64,6 +74,23 @@ from edwh_uuid7 import uuid7, uuid7_to_datetime       # or uuid_generate_v7, uui
 uuid = uuid7()                                        # UUID('0196905b-4434-74ef-aa27-442be7069beb')
 datetime_value = uuid7_to_datetime(uuid)              # datetime.datetime(2025, 5, 2, 9, 37, 2, 516000, tzinfo=datetime.timezone.utc)
 print(f"Corresponding datetime: {datetime_value}")    # 2025-05-02 09:37:02.516000+00:00
+```
+
+#### High-precision mode
+
+This library provides enhanced timestamp precision capabilities:
+
+- **Default Precision**: By default, uuid7 supports *milli*second precision
+- **Enhanced Recovery**: When working with UUIDs created by this library (`uuid7()` or `uuid7(timestamp_ns=...)`), 
+  you can enable `high_precision=True` to recover datetime values with *micro*second accuracy
+
+**Example:**
+
+```python
+datetime.fromtimestamp(time.time())           # datetime.datetime(2025, 5, 9, 17, 53, 50, 514106)
+uuid = uuid7()                                # UUID('0196b5c0-c0b2-719e-802c-9964c4992a66')
+uuid7_to_datetime(uuid)                       # datetime(2025, 5, 9, 15, 53, 50, 514000, tzinfo=datetime.timezone.utc)
+uuid7_to_datetime(uuid, high_precision=True)  # datetime(2025, 5, 9, 15, 53, 50, 514106, tzinfo=datetime.timezone.utc)
 ```
 
 ### Converting a datetime to a UUIDv7
