@@ -87,8 +87,8 @@ This library provides enhanced timestamp precision capabilities:
 **Example:**
 
 ```python
-datetime.fromtimestamp(time.time())           # datetime.datetime(2025, 5, 9, 17, 53, 50, 514106)
-uuid = uuid7()                                # UUID('0196b5c0-c0b2-719e-802c-9964c4992a66')
+now = datetime.fromtimestamp(time.time())     # datetime.datetime(2025, 5, 9, 17, 53, 50, 514106)
+uuid = datetime_to_uuid7(now)                 # UUID('0196b5c0-c0b2-719e-802c-9964c4992a66')
 uuid7_to_datetime(uuid)                       # datetime(2025, 5, 9, 15, 53, 50, 514000, tzinfo=datetime.timezone.utc)
 uuid7_to_datetime(uuid, high_precision=True)  # datetime(2025, 5, 9, 15, 53, 50, 514106, tzinfo=datetime.timezone.utc)
 ```
