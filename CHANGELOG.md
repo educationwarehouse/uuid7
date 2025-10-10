@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.2.3 (2025-10-10)
+
+### Documentation
+
+* Mention compatibility and differences with builtin postgres 18 and python 3.14 uuid7 implementations ([`ec44f57`](https://github.com/educationwarehouse/uuid7/commit/ec44f571bf72babbbaa9fbdd53bb7429cf57f67e))
+
 ## v0.2.2 (2025-05-09)
 
 ### Documentation
