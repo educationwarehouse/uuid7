@@ -1,5 +1,7 @@
 import datetime as dt
+import sys
 import uuid
+import warnings
 from uuid import UUID
 
 import pytest
@@ -81,6 +83,23 @@ def test_uuid7_datetime_roundtrip_utc():
     assert delta < 0.001, f"{dt_now} != {dt_recovered}"
 
 
+def test_uuid7_python314_implementation_timestamp_difference():
+    # uuid.uuid7 should have the same ms accuracy as our implementation:
+    if sys.version_info < (3, 14):
+        warnings.warn("can not run this test on Python < 3.14")
+        return
+
+    native = uuid.uuid7()  # does not support passing a timestamp
+    custom = uuid7()
+    assert type(native) is type(custom)  # both UUID types
+
+    dt_native = uuid7_to_datetime(native)
+    dt_custom = uuid7_to_datetime(custom)
+
+    delta = abs(dt_native.timestamp() - dt_custom.timestamp())
+    assert delta < 0.001, f"{dt_native} != {dt_custom}"
+
+
 def test_uuid7_datetime_roundtrip_timezone():
     # without utc:
     from zoneinfo import ZoneInfo
@@ -133,7 +152,9 @@ def test_uuid7_datetime_high_precision():
         assert dt_default != dt_high_precision
 
         # But the millisecond part should match
-        assert dt_default.replace(microsecond=0) == dt_high_precision.replace(microsecond=0)
+        assert dt_default.replace(microsecond=0) == dt_high_precision.replace(
+            microsecond=0
+        )
 
 
 def test_uuid7_datetime_roundtrip_high_precision():
@@ -150,11 +171,14 @@ def test_uuid7_datetime_roundtrip_high_precision():
     assert delta_standard < 0.001
 
     # High precision should be within 1µs (microsecond)
-    delta_high_precision = abs(dt_now.timestamp() - dt_recovered_high_precision.timestamp())
+    delta_high_precision = abs(
+        dt_now.timestamp() - dt_recovered_high_precision.timestamp()
+    )
     assert delta_high_precision < 0.000001
 
     # High precision should be more accurate than standard precision
     assert delta_high_precision < delta_standard
+
 
 def test_uuid7_monotonicity_with_ns_ts():
     """
