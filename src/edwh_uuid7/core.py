@@ -69,8 +69,11 @@ def uuid7(
 
     return UUID(int=uuid_int)
 
+
 def uuid7_to_datetime(
-    uuid: UUID | str, tz: Optional[ZoneInfo | timezone] = UTC, high_precision: bool = False
+    uuid: UUID | str,
+    tz: Optional[ZoneInfo | timezone] = UTC,
+    high_precision: bool = False,
 ) -> Optional[datetime]:
     """
     Extract the timestamp from a UUIDv7 and return as a datetime.
@@ -110,7 +113,6 @@ def uuid7_to_datetime(
     else:
         # Original behavior - millisecond precision only
         return datetime.fromtimestamp(ms_since_epoch / 1000, tz=tz)
-
 
 
 def datetime_to_uuid7(dt: datetime | str) -> UUID:
